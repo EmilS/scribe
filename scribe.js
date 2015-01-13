@@ -280,7 +280,7 @@ define('plugins/core/commands/insert-list',[],function () {
       InsertListCommand.prototype.execute = function (value) {
         function splitList(listItemElements) {
           if (listItemElements.length > 0) {
-            var newListNode = document.createElement(listNode.nodeName);
+            var newListNode = scribe.targetDocument.createElement(listNode.nodeName);
 
             listItemElements.forEach(function (listItemElement) {
               newListNode.appendChild(listItemElement);
@@ -318,7 +318,7 @@ define('plugins/core/commands/insert-list',[],function () {
 
               selection.placeMarkers();
 
-              var pNode = document.createElement('p');
+              var pNode = scribe.targetDocument.createElement('p');
               pNode.innerHTML = listItemElement.innerHTML;
 
               listNode.parentNode.insertBefore(pNode, listNode.nextElementSibling);
@@ -352,9 +352,9 @@ define('plugins/core/commands/insert-list',[],function () {
               // afterwards.
               selection.placeMarkers();
 
-              var documentFragment = document.createDocumentFragment();
+              var documentFragment = scribe.targetDocument.createDocumentFragment();
               selectedListItemElements.forEach(function (listItemElement) {
-                var pElement = document.createElement('p');
+                var pElement = scribe.targetDocument.createElement('p');
                 pElement.innerHTML = listItemElement.innerHTML;
                 documentFragment.appendChild(pElement);
               });
@@ -2265,7 +2265,7 @@ define('dom-observer',[
     }
 
     var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
-    
+
     // Flag to avoid running recursively
     var runningPostMutation = false;
 
@@ -2357,7 +2357,7 @@ define('plugins/core/events',[
         }
 
         function getFirstDeepestChild(node) {
-          var treeWalker = document.createTreeWalker(node);
+          var treeWalker = scribe.targetDocument.createTreeWalker(node);
           var previousNode = treeWalker.currentNode;
           if (treeWalker.firstChild()) {
             // TODO: build list of non-empty elements (used elsewhere)
@@ -2446,8 +2446,8 @@ define('plugins/core/events',[
                 scribe.transactionManager.run(function () {
                   // Default P
                   // TODO: Abstract somewhere
-                  var pNode = document.createElement('p');
-                  var brNode = document.createElement('br');
+                  var pNode = scribe.targetDocument.createElement('p');
+                  var brNode = scribe.targetDocument.createElement('br');
                   pNode.appendChild(brNode);
 
                   headingNode.parentNode.insertBefore(pNode, headingNode.nextElementSibling);
@@ -2549,8 +2549,8 @@ define('plugins/core/events',[
           // Store the caret position
           selection.placeMarkers();
 
-          var bin = document.createElement('div');
-          document.body.appendChild(bin);
+          var bin = scribe.targetDocument.createElement('div');
+          scribe.targetDocument.body.appendChild(bin);
           bin.setAttribute('contenteditable', true);
           bin.focus();
 
@@ -2740,7 +2740,7 @@ define('plugins/core/formatters/html/enforce-p-elements',[
     });
 
     consecutiveInlineElementsAndTextNodes.forEach(function (nodes) {
-      var pElement = document.createElement('p');
+      var pElement = scribe.targetDocument.createElement('p');
       nodes[0].parentNode.insertBefore(pElement, nodes[0]);
       nodes.forEach(function (node) {
         pElement.appendChild(node);
@@ -2752,7 +2752,7 @@ define('plugins/core/formatters/html/enforce-p-elements',[
 
   // Traverse the tree, wrapping child nodes as we go.
   function traverse(scribe, parentNode) {
-    var treeWalker = document.createTreeWalker(parentNode, NodeFilter.SHOW_ELEMENT);
+    var treeWalker = scribe.targetDocument.createTreeWalker(parentNode, NodeFilter.SHOW_ELEMENT);
     var node = treeWalker.firstChild();
 
     // FIXME: does this recurse down?
@@ -2782,7 +2782,7 @@ define('plugins/core/formatters/html/enforce-p-elements',[
         // `<ul>1</ul>` to <ul><li>2</li></ul>`. See skipped tests.
         // TODO: This should probably be a part of HTML Janitor, or some other
         // formatter.
-        var bin = document.createElement('div');
+        var bin = scribe.targetDocument.createElement('div');
         bin.innerHTML = html;
 
         wrapChildNodes(scribe, bin);
@@ -2865,7 +2865,7 @@ define('plugins/core/formatters/html/ensure-selectable-containers',[
     return function (scribe) {
 
       scribe.registerHTMLFormatter('normalize', function (html) {
-        var bin = document.createElement('div');
+        var bin = scribe.targetDocument.createElement('div');
         bin.innerHTML = html;
 
         traverse(scribe.element, bin);
@@ -2999,8 +2999,8 @@ define('plugins/core/inline-elements-mode',[],function () {
   
 
   // TODO: abstract
-  function hasContent(rootNode) {
-    var treeWalker = document.createTreeWalker(rootNode);
+  function hasContent(rootNode, scribe) {
+    var treeWalker = scribe.targetDocument.createTreeWalker(rootNode);
 
     while (treeWalker.nextNode()) {
       if (treeWalker.currentNode) {
@@ -3045,7 +3045,7 @@ define('plugins/core/inline-elements-mode',[],function () {
                 scribe.el.removeChild(scribe.el.lastChild);
               }
 
-              var brNode = document.createElement('br');
+              var brNode = scribe.targetDocument.createElement('br');
 
               range.insertNode(brNode);
               // After inserting the BR into the range is no longer collapsed, so
@@ -3082,8 +3082,8 @@ define('plugins/core/inline-elements-mode',[],function () {
 
               // If there is not already a right hand side content we need to
               // insert a bogus BR element.
-              if (! hasContent(contentToEndFragment)) {
-                var bogusBrNode = document.createElement('br');
+              if (! hasContent(contentToEndFragment, scribe)) {
+                var bogusBrNode = scribe.targetDocument.createElement('br');
                 range.insertNode(bogusBrNode);
               }
 
@@ -3170,7 +3170,7 @@ define('plugins/core/patches/commands/indent',[],function () {
           if (isCaretOnNewLine) {
             // FIXME: this text node is left behind. Tidy it up somehow,
             // or don't use it at all.
-            var textNode = document.createTextNode(INVISIBLE_CHAR);
+            var textNode = scribe.targetDocument.createTextNode(INVISIBLE_CHAR);
 
             range.insertNode(textNode);
 
@@ -3234,7 +3234,7 @@ define('plugins/core/patches/commands/insert-html',[], function () {
           sanitize(scribe.el);
 
           function sanitize(parentNode) {
-            var treeWalker = document.createTreeWalker(parentNode, NodeFilter.SHOW_ELEMENT);
+            var treeWalker = scribe.targetDocument.createTreeWalker(parentNode, NodeFilter.SHOW_ELEMENT);
             var node = treeWalker.firstChild();
             if (!node) { return; }
 
@@ -3449,7 +3449,7 @@ define('plugins/core/patches/commands/outdent',[],function () {
               var nextSiblingNodes = (new scribe.api.Node(pNode)).nextAll();
 
               if (nextSiblingNodes.length) {
-                var newContainerNode = document.createElement(blockquoteNode.nodeName);
+                var newContainerNode = scribe.targetDocument.createElement(blockquoteNode.nodeName);
 
                 nextSiblingNodes.forEach(function (siblingNode) {
                   newContainerNode.appendChild(siblingNode);
@@ -3496,14 +3496,14 @@ define('plugins/core/patches/commands/create-link',[],function () {
          * so we create it manually. http://jsbin.com/tutufi/2/edit?js,output
          */
         if (selection.selection.isCollapsed) {
-          var aElement = document.createElement('a');
+          var aElement = scribe.targetDocument.createElement('a');
           aElement.setAttribute('href', value);
           aElement.textContent = value;
 
           selection.range.insertNode(aElement);
 
           // Select the created link
-          var newRange = document.createRange();
+          var newRange = scribe.targetDocument.createRange();
           newRange.setStartBefore(aElement);
           newRange.setEndAfter(aElement);
 
@@ -3685,16 +3685,16 @@ define('api/command-patch',[],function () {
 
     CommandPatch.prototype.execute = function (value) {
       scribe.transactionManager.run(function () {
-        document.execCommand(this.commandName, false, value || null);
+        scribe.targetDocument.execCommand(this.commandName, false, value || null);
       }.bind(this));
     };
 
     CommandPatch.prototype.queryState = function () {
-      return document.queryCommandState(this.commandName);
+      return scribe.targetDocument.queryCommandState(this.commandName);
     };
 
     CommandPatch.prototype.queryEnabled = function () {
-      return document.queryCommandEnabled(this.commandName);
+      return scribe.targetDocument.queryCommandEnabled(this.commandName);
     };
 
     return CommandPatch;
@@ -3717,7 +3717,7 @@ define('api/command',[],function () {
         this.patch.execute(value);
       } else {
         scribe.transactionManager.run(function () {
-          document.execCommand(this.commandName, false, value || null);
+          scribe.targetDocument.execCommand(this.commandName, false, value || null);
         }.bind(this));
       }
     };
@@ -3726,7 +3726,7 @@ define('api/command',[],function () {
       if (this.patch) {
         return this.patch.queryState();
       } else {
-        return document.queryCommandState(this.commandName);
+        return scribe.targetDocument.queryCommandState(this.commandName);
       }
     };
 
@@ -3734,7 +3734,7 @@ define('api/command',[],function () {
       if (this.patch) {
         return this.patch.queryEnabled();
       } else {
-        return document.queryCommandEnabled(this.commandName);
+        return scribe.targetDocument.queryCommandEnabled(this.commandName);
       }
     };
 
@@ -3802,7 +3802,7 @@ function (elementHelper) {
      * Wrapper for object holding currently selected text.
      */
     function Selection() {
-      this.selection = window.getSelection();
+      this.selection = scribe.targetWindow.getSelection();
 
       if (this.selection.rangeCount) {
         this.range = this.selection.getRangeAt(0);
@@ -3827,9 +3827,9 @@ function (elementHelper) {
       var range = this.range;
       if(!range) { return; }
 
-      var startMarker = document.createElement('em');
+      var startMarker = scribe.targetDocument.createElement('em');
       startMarker.classList.add('scribe-marker');
-      var endMarker = document.createElement('em');
+      var endMarker = scribe.targetDocument.createElement('em');
       endMarker.classList.add('scribe-marker');
 
       // End marker
@@ -3966,7 +3966,7 @@ function (elementHelper) {
         return;
       }
 
-      var newRange = document.createRange();
+      var newRange = scribe.targetDocument.createRange();
 
       newRange.setStartBefore(markers[0]);
       if (markers.length >= 2) {
@@ -3989,7 +3989,7 @@ function (elementHelper) {
       // return true if nested inline tags ultimately just contain <br> or ""
       function isEmptyInlineElement(node) {
 
-        var treeWalker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
+        var treeWalker = scribe.targetDocument.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
 
         var currentNode = treeWalker.root;
 
@@ -8146,6 +8146,38 @@ typeof exports === 'object' ? module.exports = universalModule() :
   typeof define === 'function' && define.amd ? define('immutable/dist/immutable',universalModule) :
     Immutable = universalModule();
 
+define('api/iframe',[],function () {
+
+  
+
+  return function (scribe) {
+    var iframe = document.createElement('iframe');
+    iframe.className = 'scribe-rte-iframe';
+    scribe.el.appendChild(iframe);
+
+    var html = '<!DOCTYPE html>';
+    html += '<html><head>';
+    if (scribe.options.iframe.cssUrl) {
+      html += '<link type="text/css" rel="stylesheet" href="' + scribe.options.iframe.cssUrl + '" />';
+    }
+    if (scribe.options.iframe.contentSecurityPolicy) {
+      html += '<meta http-equiv="Content-Security-Policy" content="' + scribe.options.iframe.contentSecurityPolicy + '" />';
+    }
+    html += '</head><body id="iframe-body"></body></html>';
+
+    iframe.contentWindow.document.open();
+    iframe.contentWindow.document.write(html);
+    iframe.contentWindow.document.close();
+
+    scribe.el = iframe.contentWindow.document.body;
+    scribe.el.className = scribe.options.iframe.elClass || 'scribe';
+
+    scribe.targetWindow = iframe.contentWindow;
+    scribe.targetDocument = iframe.contentWindow.document;
+  };
+
+});
+
 define('scribe',[
   'lodash-amd/modern/objects/defaults',
   './plugins/core/commands',
@@ -8163,7 +8195,8 @@ define('scribe',[
   './event-emitter',
   './element',
   './node',
-  'immutable/dist/immutable'
+  'immutable/dist/immutable',
+  './api/iframe'
 ], function (
   defaults,
   commands,
@@ -8181,7 +8214,8 @@ define('scribe',[
   EventEmitter,
   elementHelpers,
   nodeHelpers,
-  Immutable
+  Immutable,
+  buildIframe
 ) {
 
   
@@ -8193,8 +8227,16 @@ define('scribe',[
     this.commands = {};
     this.options = defaults(options || {}, {
       allowBlockElements: true,
-      debug: false
+      debug: false,
+      iframe: false
     });
+    this.targetWindow = window;
+    this.targetDocument = document;
+
+    if (this.options.iframe) {
+      buildIframe(this);
+    }
+
     this.commandPatches = {};
     this._plainTextFormatterFactory = new FormatterFactory();
     this._htmlFormatterFactory = new HTMLFormatterFactory();
